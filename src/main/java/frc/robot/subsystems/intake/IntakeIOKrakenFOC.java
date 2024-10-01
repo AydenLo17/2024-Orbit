@@ -21,7 +21,6 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-
 import edu.wpi.first.math.util.Units;
 
 public class IntakeIOKrakenFOC implements IntakeIO {
@@ -75,14 +74,15 @@ public class IntakeIOKrakenFOC implements IntakeIO {
 
   @Override
   public void updateInputs(IntakeIOInputs inputs) {
-    inputs.intakeMotorConnected = BaseStatusSignal.refreshAll(
-        intakePosition,
-        intakeVelocity,
-        intakeAppliedVolts,
-        intakeSupplyCurrent,
-        intakeTorqueCurrent,
-        intakeTempCelsius)
-        .isOK();
+    inputs.intakeMotorConnected =
+        BaseStatusSignal.refreshAll(
+                intakePosition,
+                intakeVelocity,
+                intakeAppliedVolts,
+                intakeSupplyCurrent,
+                intakeTorqueCurrent,
+                intakeTempCelsius)
+            .isOK();
 
     inputs.intakePositionRads = Units.rotationsToRadians(intakePosition.getValueAsDouble());
     inputs.intakeVelocityRpm = intakeVelocity.getValueAsDouble() * 60.0;

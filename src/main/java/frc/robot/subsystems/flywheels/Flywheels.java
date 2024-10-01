@@ -9,28 +9,25 @@ package frc.robot.subsystems.flywheels;
 
 import static frc.robot.subsystems.flywheels.FlywheelConstants.*;
 
+import com.ctre.phoenix6.hardware.ParentDevice;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-
-import java.util.List;
-import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import frc.robot.Constants;
 import frc.robot.SmartController;
 import frc.robot.util.Alert;
 import frc.robot.util.LinearProfile;
 import frc.robot.util.LoggedTunableNumber;
 import frc.robot.util.subsystem.AdvancedSubsystem;
-
+import java.util.List;
+import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
-
-import com.ctre.phoenix6.hardware.ParentDevice;
 
 public class Flywheels extends AdvancedSubsystem {
   private static final LoggedTunableNumber kP = new LoggedTunableNumber("Flywheels/kP", gains.kP());
@@ -40,18 +37,24 @@ public class Flywheels extends AdvancedSubsystem {
   private static final LoggedTunableNumber kV = new LoggedTunableNumber("Flywheels/kV", gains.kV());
   private static final LoggedTunableNumber kA = new LoggedTunableNumber("Flywheels/kA", gains.kA());
 
-  private static final LoggedTunableNumber prepareShootMultiplier = new LoggedTunableNumber(
-      "Flywheels/PrepareShootMultiplier", 1.0);
-  private static final LoggedTunableNumber intakingRpm = new LoggedTunableNumber("Flywheels/IntakingRpm", -3000.0);
-  private static final LoggedTunableNumber demoIntakingRpm = new LoggedTunableNumber("Flywheels/DemoIntakingRpm",
-      -250.0);
-  private static final LoggedTunableNumber ejectingRpm = new LoggedTunableNumber("Flywheels/EjectingRpm", 1000.0);
-  private static final LoggedTunableNumber poopingRpm = new LoggedTunableNumber("Flywheels/PoopingRpm", 3000.0);
-  private static final LoggedTunableNumber testingLowRpm = new LoggedTunableNumber("Flywheels/TestingLowRpm", 1000.0);
-  private static final LoggedTunableNumber testingHighRpm = new LoggedTunableNumber("Flywheels/TestingHighRpm", 5000.0);
+  private static final LoggedTunableNumber prepareShootMultiplier =
+      new LoggedTunableNumber("Flywheels/PrepareShootMultiplier", 1.0);
+  private static final LoggedTunableNumber intakingRpm =
+      new LoggedTunableNumber("Flywheels/IntakingRpm", -3000.0);
+  private static final LoggedTunableNumber demoIntakingRpm =
+      new LoggedTunableNumber("Flywheels/DemoIntakingRpm", -250.0);
+  private static final LoggedTunableNumber ejectingRpm =
+      new LoggedTunableNumber("Flywheels/EjectingRpm", 1000.0);
+  private static final LoggedTunableNumber poopingRpm =
+      new LoggedTunableNumber("Flywheels/PoopingRpm", 3000.0);
+  private static final LoggedTunableNumber testingLowRpm =
+      new LoggedTunableNumber("Flywheels/TestingLowRpm", 1000.0);
+  private static final LoggedTunableNumber testingHighRpm =
+      new LoggedTunableNumber("Flywheels/TestingHighRpm", 5000.0);
 
-  private static final LoggedTunableNumber maxAcceleration = new LoggedTunableNumber(
-      "Flywheels/MaxAccelerationRpmPerSec", flywheelConfig.maxAcclerationRpmPerSec());
+  private static final LoggedTunableNumber maxAcceleration =
+      new LoggedTunableNumber(
+          "Flywheels/MaxAccelerationRpmPerSec", flywheelConfig.maxAcclerationRpmPerSec());
 
   private final FlywheelsIO io;
   private final FlywheelsIOInputsAutoLogged inputs = new FlywheelsIOInputsAutoLogged();
@@ -61,12 +64,13 @@ public class Flywheels extends AdvancedSubsystem {
   private SimpleMotorFeedforward ff = new SimpleMotorFeedforward(kS.get(), kV.get(), kA.get());
   private boolean wasClosedLoop = false;
   private boolean closedLoop = false;
-  @Setter
-  private BooleanSupplier prepareShootSupplier = () -> false;
+  @Setter private BooleanSupplier prepareShootSupplier = () -> false;
 
   // Disconnected alerts
-  private final Alert leftDisconnected = new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
-  private final Alert rightDisconnected = new Alert("Right flywheel disconnected!", Alert.AlertType.WARNING);
+  private final Alert leftDisconnected =
+      new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
+  private final Alert rightDisconnected =
+      new Alert("Right flywheel disconnected!", Alert.AlertType.WARNING);
 
   @RequiredArgsConstructor
   public enum Goal {
@@ -248,29 +252,29 @@ public class Flywheels extends AdvancedSubsystem {
   @Override
   protected Command systemCheckCommand() {
     return Commands.sequence(
-        runOnce(this::clearFaults),
-        run(() -> setGoal(Goal.TESTLOW)).withTimeout(1.0),
-        runOnce(
-            () -> {
-              if (inputs.leftVelocityRpm < 1000) {
-                addFault("[System Check] Left shooter RPM measured too low", false, true);
-              }
-              if (inputs.rightVelocityRpm < 1000) {
-                addFault("[System Check] Right shooter RPM measured too low", false, true);
-              }
-            }),
-        run(() -> setGoal(Goal.TESTHIGH)).withTimeout(2.0),
-        runOnce(
-            () -> {
-              if (inputs.leftVelocityRpm < getTargetRPMLeft() - 300
-                  || inputs.leftVelocityRpm > getTargetRPMLeft() + 300) {
-                addFault("[System Check] Left shooter did not reach target RPM", false, true);
-              }
-              if (inputs.rightVelocityRpm < getTargetRPMRight() - 300
-                  || inputs.rightVelocityRpm > getTargetRPMRight() + 300) {
-                addFault("[System Check] Right shooter did not reach target RPM", false, true);
-              }
-            }))
+            runOnce(this::clearFaults),
+            run(() -> setGoal(Goal.TESTLOW)).withTimeout(1.0),
+            runOnce(
+                () -> {
+                  if (inputs.leftVelocityRpm < 1000) {
+                    addFault("[System Check] Left shooter RPM measured too low", false, true);
+                  }
+                  if (inputs.rightVelocityRpm < 1000) {
+                    addFault("[System Check] Right shooter RPM measured too low", false, true);
+                  }
+                }),
+            run(() -> setGoal(Goal.TESTHIGH)).withTimeout(2.0),
+            runOnce(
+                () -> {
+                  if (inputs.leftVelocityRpm < getTargetRPMLeft() - 300
+                      || inputs.leftVelocityRpm > getTargetRPMLeft() + 300) {
+                    addFault("[System Check] Left shooter did not reach target RPM", false, true);
+                  }
+                  if (inputs.rightVelocityRpm < getTargetRPMRight() - 300
+                      || inputs.rightVelocityRpm > getTargetRPMRight() + 300) {
+                    addFault("[System Check] Right shooter did not reach target RPM", false, true);
+                  }
+                }))
         .until(() -> !getFaults().isEmpty())
         .andThen(runOnce(() -> setGoal(Goal.IDLE)));
   }

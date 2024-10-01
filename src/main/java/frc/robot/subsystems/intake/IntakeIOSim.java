@@ -14,8 +14,8 @@ import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import frc.robot.Constants;
 
 public class IntakeIOSim implements IntakeIO {
-  private final FlywheelSim intakeSim = new FlywheelSim(DCMotor.getKrakenX60Foc(1), 3,
-      0.00363458292);
+  private final FlywheelSim intakeSim =
+      new FlywheelSim(DCMotor.getKrakenX60Foc(1), 3, 0.00363458292);
 
   private double leftAppliedVolts = 0.0;
 
@@ -23,8 +23,9 @@ public class IntakeIOSim implements IntakeIO {
   public void updateInputs(IntakeIOInputs inputs) {
     intakeSim.update(Constants.loopPeriodSecs);
 
-    inputs.intakePositionRads += Units
-        .radiansToRotations(intakeSim.getAngularVelocityRadPerSec() * Constants.loopPeriodSecs);
+    inputs.intakePositionRads +=
+        Units.radiansToRotations(
+            intakeSim.getAngularVelocityRadPerSec() * Constants.loopPeriodSecs);
     inputs.intakeVelocityRpm = intakeSim.getAngularVelocityRPM();
     inputs.intakeAppliedVolts = leftAppliedVolts;
     inputs.intakeSupplyCurrentAmps = intakeSim.getCurrentDrawAmps();

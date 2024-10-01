@@ -56,12 +56,9 @@ import frc.robot.subsystems.vision.AprilTagVisionIOPhotonVisionSIM;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
- * This class is where the bulk of the robot should be declared. Since
- * Command-based is a
- * "declarative" paradigm, very little robot logic should actually be handled in
- * the {@link Robot}
- * periodic methods (other than the scheduler calls). Instead, the structure of
- * the robot (including
+ * This class is where the bulk of the robot should be declared. Since Command-based is a
+ * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
+ * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
@@ -80,19 +77,18 @@ public class RobotContainer {
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
 
-  /**
-   * The container for the robot. Contains subsystems, OI devices, and commands.
-   */
+  /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     switch (Constants.getMode()) {
       case REAL:
         // Real robot, instantiate hardware IO implementations
-        drive = new Drive(
-            new GyroIOPigeon2(true),
-            new ModuleIOTalonFX(moduleConfigs[0]),
-            new ModuleIOTalonFX(moduleConfigs[1]),
-            new ModuleIOTalonFX(moduleConfigs[2]),
-            new ModuleIOTalonFX(moduleConfigs[3]));
+        drive =
+            new Drive(
+                new GyroIOPigeon2(true),
+                new ModuleIOTalonFX(moduleConfigs[0]),
+                new ModuleIOTalonFX(moduleConfigs[1]),
+                new ModuleIOTalonFX(moduleConfigs[2]),
+                new ModuleIOTalonFX(moduleConfigs[3]));
         aprilTagVision = new AprilTagVision(new AprilTagVisionIOLimelight("limelight"));
         flywheels = new Flywheels(new FlywheelsIOKrakenFOC());
         magazine = new Magazine(new MagazineIOKrakenFOC());
@@ -103,18 +99,19 @@ public class RobotContainer {
 
       case SIM:
         // Sim robot, instantiate physics sim IO implementations
-        drive = new Drive(
-            new GyroIO() {
-            },
-            new ModuleIOSim(),
-            new ModuleIOSim(),
-            new ModuleIOSim(),
-            new ModuleIOSim());
-        aprilTagVision = new AprilTagVision(
-            new AprilTagVisionIOPhotonVisionSIM(
-                "photonCamera1",
-                new Transform3d(new Translation3d(0.5, 0.0, 0.5), new Rotation3d(0, 0, 0)),
-                drive::getDrive));
+        drive =
+            new Drive(
+                new GyroIO() {},
+                new ModuleIOSim(),
+                new ModuleIOSim(),
+                new ModuleIOSim(),
+                new ModuleIOSim());
+        aprilTagVision =
+            new AprilTagVision(
+                new AprilTagVisionIOPhotonVisionSIM(
+                    "photonCamera1",
+                    new Transform3d(new Translation3d(0.5, 0.0, 0.5), new Rotation3d(0, 0, 0)),
+                    drive::getDrive));
         flywheels = new Flywheels(new FlywheelsIOSim());
         magazine = new Magazine(new MagazineIOSim());
         intake = new Intake(new IntakeIOSim());
@@ -124,27 +121,18 @@ public class RobotContainer {
 
       default:
         // Replayed robot, disable IO implementations
-        drive = new Drive(
-            new GyroIO() {
-            },
-            new ModuleIO() {
-            },
-            new ModuleIO() {
-            },
-            new ModuleIO() {
-            },
-            new ModuleIO() {
-            });
-        aprilTagVision = new AprilTagVision(new AprilTagVisionIO() {
-        });
-        flywheels = new Flywheels(new FlywheelsIO() {
-        });
-        magazine = new Magazine(new MagazineIO() {
-        });
-        intake = new Intake(new IntakeIO() {
-        });
-        arm = new Arm(new ArmIO() {
-        });
+        drive =
+            new Drive(
+                new GyroIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {});
+        aprilTagVision = new AprilTagVision(new AprilTagVisionIO() {});
+        flywheels = new Flywheels(new FlywheelsIO() {});
+        magazine = new Magazine(new MagazineIO() {});
+        intake = new Intake(new IntakeIO() {});
+        arm = new Arm(new ArmIO() {});
 
         break;
     }
@@ -172,11 +160,9 @@ public class RobotContainer {
   }
 
   /**
-   * Use this method to define your button->command mappings. Buttons can be
-   * created by
+   * Use this method to define your button->command mappings. Buttons can be created by
    * instantiating a {@link GenericHID} or one of its subclasses ({@link
-   * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing
-   * it to a {@link
+   * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing it to a {@link
    * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
    */
   private void configureButtonBindings() {

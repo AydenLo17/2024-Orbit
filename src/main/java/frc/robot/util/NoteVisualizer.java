@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ScheduleCommand;
+import frc.robot.subsystems.arm.ArmConstants;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -20,7 +21,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import lombok.Setter;
-import frc.robot.subsystems.arm.ArmConstants;
 import org.littletonrobotics.junction.Logger;
 
 public class NoteVisualizer {

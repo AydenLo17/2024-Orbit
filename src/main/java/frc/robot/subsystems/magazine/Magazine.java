@@ -13,30 +13,30 @@
 
 package frc.robot.subsystems.magazine;
 
+import com.ctre.phoenix6.hardware.ParentDevice;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.util.Alert;
 import frc.robot.util.LoggedTunableNumber;
 import frc.robot.util.subsystem.AdvancedSubsystem;
-
 import java.util.List;
 import java.util.function.DoubleSupplier;
-
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-import com.ctre.phoenix6.hardware.ParentDevice;
-
 public class Magazine extends AdvancedSubsystem {
-  private static final LoggedTunableNumber intakingVolts = new LoggedTunableNumber("Magazine/IntakingVolts", 12.0);
-  private static final LoggedTunableNumber ejectingVolts = new LoggedTunableNumber("Magazine/EjectingVolts", -12.0);
+  private static final LoggedTunableNumber intakingVolts =
+      new LoggedTunableNumber("Magazine/IntakingVolts", 12.0);
+  private static final LoggedTunableNumber ejectingVolts =
+      new LoggedTunableNumber("Magazine/EjectingVolts", -12.0);
 
   private final MagazineIO io;
   private final MagazineIOInputsAutoLogged inputs = new MagazineIOInputsAutoLogged();
 
   // Disconnected alerts
-  private final Alert magazineDisconnected = new Alert("Magazine motor disconnected!", Alert.AlertType.WARNING);
+  private final Alert magazineDisconnected =
+      new Alert("Magazine motor disconnected!", Alert.AlertType.WARNING);
 
   public enum Goal {
     IDLE(() -> 0.0),
@@ -62,8 +62,7 @@ public class Magazine extends AdvancedSubsystem {
   public Magazine(MagazineIO io) {
     this.io = io;
 
-    setDefaultCommand(runOnce(io::stop).andThen(run(() -> {
-    })).withName("Magazine Idle"));
+    setDefaultCommand(runOnce(io::stop).andThen(run(() -> {})).withName("Magazine Idle"));
   }
 
   @Override
@@ -113,8 +112,7 @@ public class Magazine extends AdvancedSubsystem {
   }
 
   public Command ejectCommand() {
-    return startEnd(() -> setGoal(Goal.EJECT), () -> setGoal(Goal.IDLE))
-        .withName("Magazine Eject");
+    return startEnd(() -> setGoal(Goal.EJECT), () -> setGoal(Goal.IDLE)).withName("Magazine Eject");
   }
 
   @Override
@@ -125,15 +123,14 @@ public class Magazine extends AdvancedSubsystem {
   @Override
   protected Command systemCheckCommand() {
     return Commands.sequence(
-        runOnce(this::clearFaults),
-        run(() -> runCharacterization(8.0)).withTimeout(1.0),
-        runOnce(
-            () -> {
-              if (getCharacterizationVelocity() < 1000) {
-                addFault("[System Check] Magazine RPM measured too low", false, true);
-              }
-            }))
-
+            runOnce(this::clearFaults),
+            run(() -> runCharacterization(8.0)).withTimeout(1.0),
+            runOnce(
+                () -> {
+                  if (getCharacterizationVelocity() < 1000) {
+                    addFault("[System Check] Magazine RPM measured too low", false, true);
+                  }
+                }))
         .until(() -> !getFaults().isEmpty())
         .andThen(runOnce(() -> runCharacterization(0)));
   }

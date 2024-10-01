@@ -9,6 +9,7 @@ package frc.robot.subsystems.arm;
 
 import static frc.robot.subsystems.arm.ArmConstants.*;
 
+import com.ctre.phoenix6.hardware.ParentDevice;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -18,14 +19,6 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-
-import java.util.List;
-import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
-import java.util.function.Supplier;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import frc.robot.Constants;
 import frc.robot.SmartController;
 import frc.robot.util.Alert;
@@ -33,55 +26,67 @@ import frc.robot.util.EqualsUtil;
 import frc.robot.util.LoggedTunableNumber;
 import frc.robot.util.NoteVisualizer;
 import frc.robot.util.subsystem.AdvancedSubsystem;
-
+import java.util.List;
+import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
-
-import com.ctre.phoenix6.hardware.ParentDevice;
 
 public class Arm extends AdvancedSubsystem {
   private static final LoggedTunableNumber kP = new LoggedTunableNumber("Arm/Gains/kP", gains.kP());
   private static final LoggedTunableNumber kI = new LoggedTunableNumber("Arm/Gains/kI", gains.kI());
   private static final LoggedTunableNumber kD = new LoggedTunableNumber("Arm/Gains/kD", gains.kD());
-  private static final LoggedTunableNumber kS = new LoggedTunableNumber("Arm/Gains/kS", gains.ffkS());
-  private static final LoggedTunableNumber kV = new LoggedTunableNumber("Arm/Gains/kV", gains.ffkV());
-  private static final LoggedTunableNumber kA = new LoggedTunableNumber("Arm/Gains/kA", gains.ffkA());
-  private static final LoggedTunableNumber kG = new LoggedTunableNumber("Arm/Gains/kG", gains.ffkG());
-  private static final LoggedTunableNumber maxVelocity = new LoggedTunableNumber("Arm/Velocity",
-      profileConstraints.maxVelocity);
-  private static final LoggedTunableNumber maxAcceleration = new LoggedTunableNumber("Arm/Acceleration",
-      profileConstraints.maxAcceleration);
-  private static final LoggedTunableNumber smoothVelocity = new LoggedTunableNumber("Arm/SmoothVelocity",
-      profileConstraints.maxVelocity * 0.75);
-  private static final LoggedTunableNumber smoothAcceleration = new LoggedTunableNumber("Arm/SmoothAcceleration",
-      profileConstraints.maxAcceleration * 0.5);
-  private static final LoggedTunableNumber prepareClimbVelocity = new LoggedTunableNumber("Arm/PrepareClimbVelocity",
-      1.5);
-  private static final LoggedTunableNumber prepareClimbAcceleration = new LoggedTunableNumber(
-      "Arm/PrepareClimbAcceleration", 2.5);
-  private static final LoggedTunableNumber lowerLimitDegrees = new LoggedTunableNumber("Arm/LowerLimitDegrees",
-      minAngle.getDegrees());
-  private static final LoggedTunableNumber upperLimitDegrees = new LoggedTunableNumber("Arm/UpperLimitDegrees",
-      maxAngle.getDegrees());
-  private static final LoggedTunableNumber partialStowUpperLimitDegrees = new LoggedTunableNumber(
-      "Arm/PartialStowUpperLimitDegrees", 30.0);
-  private static final LoggedTunableNumber closeShootingZoneFeet = new LoggedTunableNumber(
-      "RobotState/CloseShootingZoneFeet", 10.0);
+  private static final LoggedTunableNumber kS =
+      new LoggedTunableNumber("Arm/Gains/kS", gains.ffkS());
+  private static final LoggedTunableNumber kV =
+      new LoggedTunableNumber("Arm/Gains/kV", gains.ffkV());
+  private static final LoggedTunableNumber kA =
+      new LoggedTunableNumber("Arm/Gains/kA", gains.ffkA());
+  private static final LoggedTunableNumber kG =
+      new LoggedTunableNumber("Arm/Gains/kG", gains.ffkG());
+  private static final LoggedTunableNumber maxVelocity =
+      new LoggedTunableNumber("Arm/Velocity", profileConstraints.maxVelocity);
+  private static final LoggedTunableNumber maxAcceleration =
+      new LoggedTunableNumber("Arm/Acceleration", profileConstraints.maxAcceleration);
+  private static final LoggedTunableNumber smoothVelocity =
+      new LoggedTunableNumber("Arm/SmoothVelocity", profileConstraints.maxVelocity * 0.75);
+  private static final LoggedTunableNumber smoothAcceleration =
+      new LoggedTunableNumber("Arm/SmoothAcceleration", profileConstraints.maxAcceleration * 0.5);
+  private static final LoggedTunableNumber prepareClimbVelocity =
+      new LoggedTunableNumber("Arm/PrepareClimbVelocity", 1.5);
+  private static final LoggedTunableNumber prepareClimbAcceleration =
+      new LoggedTunableNumber("Arm/PrepareClimbAcceleration", 2.5);
+  private static final LoggedTunableNumber lowerLimitDegrees =
+      new LoggedTunableNumber("Arm/LowerLimitDegrees", minAngle.getDegrees());
+  private static final LoggedTunableNumber upperLimitDegrees =
+      new LoggedTunableNumber("Arm/UpperLimitDegrees", maxAngle.getDegrees());
+  private static final LoggedTunableNumber partialStowUpperLimitDegrees =
+      new LoggedTunableNumber("Arm/PartialStowUpperLimitDegrees", 30.0);
+  private static final LoggedTunableNumber closeShootingZoneFeet =
+      new LoggedTunableNumber("RobotState/CloseShootingZoneFeet", 10.0);
 
   // Profile constraints
-  public static final Supplier<TrapezoidProfile.Constraints> maxProfileConstraints = () -> new TrapezoidProfile.Constraints(
-      maxVelocity.get(), maxAcceleration.get());
-  public static final Supplier<TrapezoidProfile.Constraints> smoothProfileConstraints = () -> new TrapezoidProfile.Constraints(
-      smoothVelocity.get(), smoothAcceleration.get());
-  public static final Supplier<TrapezoidProfile.Constraints> prepareClimbProfileConstraints = () -> new TrapezoidProfile.Constraints(
-      prepareClimbVelocity.get(), prepareClimbAcceleration.get());
+  public static final Supplier<TrapezoidProfile.Constraints> maxProfileConstraints =
+      () -> new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get());
+  public static final Supplier<TrapezoidProfile.Constraints> smoothProfileConstraints =
+      () -> new TrapezoidProfile.Constraints(smoothVelocity.get(), smoothAcceleration.get());
+  public static final Supplier<TrapezoidProfile.Constraints> prepareClimbProfileConstraints =
+      () ->
+          new TrapezoidProfile.Constraints(
+              prepareClimbVelocity.get(), prepareClimbAcceleration.get());
 
   @RequiredArgsConstructor
   public enum Goal {
     STOW(() -> 0),
     UNJAM_INTAKE(new LoggedTunableNumber("Arm/UnjamDegrees", 40.0)),
     STATION_INTAKE(new LoggedTunableNumber("Arm/StationIntakeDegrees", 45.0)),
-    AIM(() -> SmartController.getInstance().getTargetAimingParameters().shooterAngle().getDegrees()),
+    AIM(
+        () ->
+            SmartController.getInstance().getTargetAimingParameters().shooterAngle().getDegrees()),
     DEMO_SHOT(new LoggedTunableNumber("Arm/DemoShotDegrees", 40.0)),
     AMP(new LoggedTunableNumber("Arm/AmpDegrees", 110.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
@@ -97,18 +102,13 @@ public class Arm extends AdvancedSubsystem {
     }
   }
 
-  @AutoLogOutput
-  @Getter
-  @Setter
-  private Goal goal = Goal.STOW;
+  @AutoLogOutput @Getter @Setter private Goal goal = Goal.STOW;
   private boolean characterizing = false;
 
   private final ArmIO io;
   private final ArmIOInputsAutoLogged inputs = new ArmIOInputsAutoLogged();
 
-  @AutoLogOutput
-  @Setter
-  private double currentCompensation = 0.0;
+  @AutoLogOutput @Setter private double currentCompensation = 0.0;
   private TrapezoidProfile.Constraints currentConstraints = maxProfileConstraints.get();
   private TrapezoidProfile profile;
   private TrapezoidProfile.State setpointState = new TrapezoidProfile.State();
@@ -120,11 +120,12 @@ public class Arm extends AdvancedSubsystem {
   private final ArmVisualizer setpointVisualizer;
   private final ArmVisualizer goalVisualizer;
 
-  private final Alert leaderMotorDisconnected = new Alert("Arm leader motor disconnected!", Alert.AlertType.WARNING);
-  private final Alert followerMotorDisconnected = new Alert("Arm follower motor disconnected!",
-      Alert.AlertType.WARNING);
-  private final Alert absoluteEncoderDisconnected = new Alert("Arm absolute encoder disconnected!",
-      Alert.AlertType.WARNING);
+  private final Alert leaderMotorDisconnected =
+      new Alert("Arm leader motor disconnected!", Alert.AlertType.WARNING);
+  private final Alert followerMotorDisconnected =
+      new Alert("Arm follower motor disconnected!", Alert.AlertType.WARNING);
+  private final Alert absoluteEncoderDisconnected =
+      new Alert("Arm absolute encoder disconnected!", Alert.AlertType.WARNING);
 
   private BooleanSupplier disableSupplier = DriverStation::isDisabled;
   private BooleanSupplier coastSupplier = () -> false;
@@ -137,8 +138,9 @@ public class Arm extends AdvancedSubsystem {
     this.io = io;
     io.setBrakeMode(true);
 
-    profile = new TrapezoidProfile(
-        new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get()));
+    profile =
+        new TrapezoidProfile(
+            new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get()));
     io.setPID(kP.get(), kI.get(), kD.get());
     ff = new ArmFeedforward(kS.get(), kG.get(), kV.get(), kA.get());
 
@@ -211,19 +213,22 @@ public class Arm extends AdvancedSubsystem {
     // Don't run profile when characterizing, coast mode, or disabled
     if (!characterizing && brakeModeEnabled && !disableSupplier.getAsBoolean()) {
       // Run closed loop
-      goalAngle = goal.getDegrees() + (goal == Goal.AIM ? Units.degreesToRadians(currentCompensation) : 0.0);
+      goalAngle =
+          goal.getDegrees()
+              + (goal == Goal.AIM ? Units.degreesToRadians(currentCompensation) : 0.0);
       if (goal == Goal.STOW) {
         goalAngle = getStowAngle();
       }
-      setpointState = profile.calculate(
-          Constants.loopPeriodSecs,
-          setpointState,
-          new TrapezoidProfile.State(
-              MathUtil.clamp(
-                  goalAngle,
-                  Units.degreesToRadians(lowerLimitDegrees.get()),
-                  Units.degreesToRadians(upperLimitDegrees.get())),
-              0.0));
+      setpointState =
+          profile.calculate(
+              Constants.loopPeriodSecs,
+              setpointState,
+              new TrapezoidProfile.State(
+                  MathUtil.clamp(
+                      goalAngle,
+                      Units.degreesToRadians(lowerLimitDegrees.get()),
+                      Units.degreesToRadians(upperLimitDegrees.get())),
+                  0.0));
       if (goal == Goal.STOW
           && EqualsUtil.epsilonEquals(goalAngle, minAngle.getRadians())
           && atGoal()) {
@@ -255,8 +260,7 @@ public class Arm extends AdvancedSubsystem {
   }
 
   public void setBrakeMode(boolean enabled) {
-    if (brakeModeEnabled == enabled)
-      return;
+    if (brakeModeEnabled == enabled) return;
     brakeModeEnabled = enabled;
     io.setBrakeMode(brakeModeEnabled);
   }
@@ -294,23 +298,23 @@ public class Arm extends AdvancedSubsystem {
   @Override
   protected Command systemCheckCommand() {
     return Commands.sequence(
-        runOnce(this::clearFaults),
-        run(() -> setGoal(Goal.TEST)).withTimeout(5.0),
-        runOnce(
-            () -> {
-              if (inputs.positionDegrees < getGoal().getDegrees() - 1
-                  || inputs.positionDegrees > getGoal().getDegrees() + 1) {
-                addFault("[System Check] Arm  did not reach target TEST", false, true);
-              }
-            }),
-        run(() -> setGoal(Goal.AMP)).withTimeout(5.0),
-        runOnce(
-            () -> {
-              if (inputs.positionDegrees < getGoal().getDegrees() - 1
-                  || inputs.positionDegrees > getGoal().getDegrees() + 1) {
-                addFault("[System Check] Arm  did not reach target AMP", false, true);
-              }
-            }))
+            runOnce(this::clearFaults),
+            run(() -> setGoal(Goal.TEST)).withTimeout(5.0),
+            runOnce(
+                () -> {
+                  if (inputs.positionDegrees < getGoal().getDegrees() - 1
+                      || inputs.positionDegrees > getGoal().getDegrees() + 1) {
+                    addFault("[System Check] Arm  did not reach target TEST", false, true);
+                  }
+                }),
+            run(() -> setGoal(Goal.AMP)).withTimeout(5.0),
+            runOnce(
+                () -> {
+                  if (inputs.positionDegrees < getGoal().getDegrees() - 1
+                      || inputs.positionDegrees > getGoal().getDegrees() + 1) {
+                    addFault("[System Check] Arm  did not reach target AMP", false, true);
+                  }
+                }))
         .until(() -> !getFaults().isEmpty())
         .andThen(runOnce(() -> setGoal(Goal.STOW)));
   }

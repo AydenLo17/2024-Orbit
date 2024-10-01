@@ -273,8 +273,7 @@ public class SmartController {
    */
   public void calculateAmp() {
     setTargetAimingParameters(
-        new AimingParameters(
-            Rotation2d.fromDegrees(90), 0.0, 20, ArmConstants.maxAngle, 1, 0));
+        new AimingParameters(Rotation2d.fromDegrees(90), 0.0, 20, ArmConstants.maxAngle, 1, 0));
   }
 
   /**

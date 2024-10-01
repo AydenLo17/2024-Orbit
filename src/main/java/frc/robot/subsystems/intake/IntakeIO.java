@@ -13,14 +13,11 @@
 
 package frc.robot.subsystems.intake;
 
+import com.ctre.phoenix6.hardware.ParentDevice;
+import frc.robot.util.subsystem.AdvancedSubsystem;
 import java.util.Collections;
 import java.util.List;
-
 import org.littletonrobotics.junction.AutoLog;
-
-import com.ctre.phoenix6.hardware.ParentDevice;
-
-import frc.robot.util.subsystem.AdvancedSubsystem;
 
 public interface IntakeIO {
   @AutoLog
@@ -35,25 +32,20 @@ public interface IntakeIO {
   }
 
   /** Updates the set of loggable inputs */
-  public default void updateInputs(IntakeIOInputs inputs) {
-  }
+  public default void updateInputs(IntakeIOInputs inputs) {}
 
   /** Run intake at volts */
-  default void runVolts(double volts) {
-  }
+  default void runVolts(double volts) {}
 
   /** Stop intake */
-  public default void stop() {
-  }
+  public default void stop() {}
 
-    /** Run intake at voltage */
-    default void runCharacterizationIntake(double input) {
-    }
+  /** Run intake at voltage */
+  default void runCharacterizationIntake(double input) {}
 
   default List<ParentDevice> getOrchestraDevices() {
     return Collections.emptyList();
   }
 
-  default void registerSelfCheckHardware(AdvancedSubsystem subsystem) {
-  }
+  default void registerSelfCheckHardware(AdvancedSubsystem subsystem) {}
 }

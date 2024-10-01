@@ -13,14 +13,11 @@
 
 package frc.robot.subsystems.magazine;
 
+import com.ctre.phoenix6.hardware.ParentDevice;
+import frc.robot.util.subsystem.AdvancedSubsystem;
 import java.util.Collections;
 import java.util.List;
-
 import org.littletonrobotics.junction.AutoLog;
-
-import com.ctre.phoenix6.hardware.ParentDevice;
-
-import frc.robot.util.subsystem.AdvancedSubsystem;
 
 public interface MagazineIO {
   @AutoLog
@@ -35,25 +32,20 @@ public interface MagazineIO {
   }
 
   /** Updates the set of loggable inputs */
-  public default void updateInputs(MagazineIOInputs inputs) {
-  }
+  public default void updateInputs(MagazineIOInputs inputs) {}
 
   /** Run magazine at volts */
-  default void runVolts(double volts) {
-  }
+  default void runVolts(double volts) {}
 
   /** Stop magazine */
-  public default void stop() {
-  }
+  public default void stop() {}
 
-    /** Run magazine at voltage */
-    default void runCharacterizationMagazine(double input) {
-    }
+  /** Run magazine at voltage */
+  default void runCharacterizationMagazine(double input) {}
 
   default List<ParentDevice> getOrchestraDevices() {
     return Collections.emptyList();
   }
 
-  default void registerSelfCheckHardware(AdvancedSubsystem subsystem) {
-  }
+  default void registerSelfCheckHardware(AdvancedSubsystem subsystem) {}
 }

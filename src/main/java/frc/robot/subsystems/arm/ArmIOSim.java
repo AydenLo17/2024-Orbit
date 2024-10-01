@@ -81,7 +81,8 @@ public class ArmIOSim implements ArmIO {
       controller.reset();
       controllerNeedsReset = false;
     }
-    runVolts(controller.calculate(sim.getAngleRads(), setpointDegrees + positionOffset) + feedforward);
+    runVolts(
+        controller.calculate(sim.getAngleRads(), setpointDegrees + positionOffset) + feedforward);
   }
 
   @Override

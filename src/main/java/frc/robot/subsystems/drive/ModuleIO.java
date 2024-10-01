@@ -13,7 +13,11 @@
 
 package frc.robot.subsystems.drive;
 
+import com.ctre.phoenix6.hardware.ParentDevice;
 import edu.wpi.first.math.geometry.Rotation2d;
+import frc.robot.util.subsystem.AdvancedSubsystem;
+import java.util.Collections;
+import java.util.List;
 import org.littletonrobotics.junction.AutoLog;
 
 public interface ModuleIO {
@@ -49,4 +53,10 @@ public interface ModuleIO {
 
   /** Enable or disable brake mode on the turn motor. */
   public default void setTurnBrakeMode(boolean enable) {}
+
+  public default List<ParentDevice> getOrchestraDevices() {
+    return Collections.emptyList();
+  }
+
+  public default void registerSelfCheckHardware(AdvancedSubsystem subsystem) {}
 }

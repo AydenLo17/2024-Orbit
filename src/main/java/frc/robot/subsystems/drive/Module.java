@@ -15,15 +15,20 @@ package frc.robot.subsystems.drive;
 
 import static frc.robot.subsystems.drive.DriveConstants.*;
 
+import com.ctre.phoenix6.hardware.ParentDevice;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
+import frc.robot.util.subsystem.AdvancedSubsystem;
+import java.util.List;
 import org.littletonrobotics.junction.Logger;
 
-public class Module {
+public class Module extends AdvancedSubsystem {
   private final ModuleIO io;
   private final ModuleIOInputsAutoLogged inputs = new ModuleIOInputsAutoLogged();
   private final int index;
@@ -92,7 +97,8 @@ public class Module {
       if (speedSetpoint != null) {
         // Scale velocity based on turn error
         //
-        // When the error is 90 degrees, the velocity setpoint should be 0. As the wheel turns
+        // When the error is 90 degrees, the velocity setpoint should be 0. As the wheel
+        // turns
         // towards the setpoint, its velocity should increase. This is achieved by
         // taking the component of the velocity in the direction of the setpoint.
         double adjustSpeedSetpoint = speedSetpoint * Math.cos(turnFeedback.getPositionError());
@@ -202,5 +208,45 @@ public class Module {
   /** Returns the drive velocity in radians/sec. */
   public double getCharacterizationVelocity() {
     return inputs.driveVelocityRadPerSec;
+  }
+
+  @Override
+  public List<ParentDevice> getOrchestraDevices() {
+    return io.getOrchestraDevices();
+  }
+
+  @Override
+  protected Command systemCheckCommand() {
+    return Commands.sequence(
+            runOnce(
+                () -> {
+                  clearFaults();
+                  io.setDriveVoltage(0);
+                  io.setTurnVoltage(3.6);
+                }),
+            Commands.waitSeconds(0.3),
+            runOnce(
+                () -> {
+                  if (inputs.turnVelocityRadPerSec < 1) {
+                    addFault(
+                        "[System Check] Rotation encoder velocity measured too slow", false, true);
+                  }
+                }),
+            Commands.waitSeconds(0.5),
+            runOnce(
+                () -> {
+                  io.setDriveVoltage(1.2);
+                  io.setTurnVoltage(0);
+                }),
+            Commands.waitSeconds(0.5),
+            runOnce(
+                () -> {
+                  if (getState().speedMetersPerSecond < 0.25) {
+                    addFault("[System Check] Drive motor encoder velocity too slow", false, true);
+                  }
+                  io.setDriveVoltage(0);
+                }))
+        .until(() -> !getFaults().isEmpty())
+        .andThen(runOnce(this::stop));
   }
 }

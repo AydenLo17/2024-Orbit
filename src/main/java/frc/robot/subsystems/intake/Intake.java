@@ -13,30 +13,30 @@
 
 package frc.robot.subsystems.intake;
 
+import com.ctre.phoenix6.hardware.ParentDevice;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.util.Alert;
 import frc.robot.util.LoggedTunableNumber;
 import frc.robot.util.subsystem.AdvancedSubsystem;
-
 import java.util.List;
 import java.util.function.DoubleSupplier;
-
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-import com.ctre.phoenix6.hardware.ParentDevice;
-
 public class Intake extends AdvancedSubsystem {
-  private static final LoggedTunableNumber intakingVolts = new LoggedTunableNumber("Intake/IntakingVolts", 12.0);
-  private static final LoggedTunableNumber ejectingVolts = new LoggedTunableNumber("Intake/EjectingVolts", -12.0);
+  private static final LoggedTunableNumber intakingVolts =
+      new LoggedTunableNumber("Intake/IntakingVolts", 12.0);
+  private static final LoggedTunableNumber ejectingVolts =
+      new LoggedTunableNumber("Intake/EjectingVolts", -12.0);
 
   private final IntakeIO io;
   private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
 
   // Disconnected alerts
-  private final Alert intakeDisconnected = new Alert("Intake motor disconnected!", Alert.AlertType.WARNING);
+  private final Alert intakeDisconnected =
+      new Alert("Intake motor disconnected!", Alert.AlertType.WARNING);
 
   public enum Goal {
     IDLE(() -> 0.0),
@@ -62,8 +62,7 @@ public class Intake extends AdvancedSubsystem {
   public Intake(IntakeIO io) {
     this.io = io;
 
-    setDefaultCommand(runOnce(io::stop).andThen(run(() -> {
-    })).withName("Intake Idle"));
+    setDefaultCommand(runOnce(io::stop).andThen(run(() -> {})).withName("Intake Idle"));
   }
 
   @Override
@@ -108,13 +107,11 @@ public class Intake extends AdvancedSubsystem {
   }
 
   public Command intakeCommand() {
-    return startEnd(() -> setGoal(Goal.INTAKE), () -> setGoal(Goal.IDLE))
-        .withName("Intake Intake");
+    return startEnd(() -> setGoal(Goal.INTAKE), () -> setGoal(Goal.IDLE)).withName("Intake Intake");
   }
 
   public Command ejectCommand() {
-    return startEnd(() -> setGoal(Goal.EJECT), () -> setGoal(Goal.IDLE))
-        .withName("Intake Eject");
+    return startEnd(() -> setGoal(Goal.EJECT), () -> setGoal(Goal.IDLE)).withName("Intake Eject");
   }
 
   @Override
@@ -125,15 +122,14 @@ public class Intake extends AdvancedSubsystem {
   @Override
   protected Command systemCheckCommand() {
     return Commands.sequence(
-        runOnce(this::clearFaults),
-        run(() -> runCharacterization(8.0)).withTimeout(1.0),
-        runOnce(
-            () -> {
-              if (getCharacterizationVelocity() < 1000) {
-                addFault("[System Check] Intake RPM measured too low", false, true);
-              }
-            }))
-
+            runOnce(this::clearFaults),
+            run(() -> runCharacterization(8.0)).withTimeout(1.0),
+            runOnce(
+                () -> {
+                  if (getCharacterizationVelocity() < 1000) {
+                    addFault("[System Check] Intake RPM measured too low", false, true);
+                  }
+                }))
         .until(() -> !getFaults().isEmpty())
         .andThen(runOnce(() -> runCharacterization(0)));
   }

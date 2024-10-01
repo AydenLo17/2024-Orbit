@@ -35,42 +35,33 @@ public interface FlywheelsIO {
   }
 
   /** Update inputs */
-  default void updateInputs(FlywheelsIOInputs inputs) {
-  }
+  default void updateInputs(FlywheelsIOInputs inputs) {}
 
   /** Run both motors at voltage */
-  default void runVolts(double leftVolts, double rightVolts) {
-  }
+  default void runVolts(double leftVolts, double rightVolts) {}
 
   /** Stop both flywheels */
-  default void stop() {
-  }
+  default void stop() {}
 
   /** Run left and right flywheels at velocity in rpm */
   default void runVelocity(
-      double leftRpm, double rightRpm, double leftFeedforward, double rightFeedforward) {
-  }
+      double leftRpm, double rightRpm, double leftFeedforward, double rightFeedforward) {}
 
   /** Config PID values for both motors */
-  default void setPID(double kP, double kI, double kD) {
-  }
+  default void setPID(double kP, double kI, double kD) {}
 
   /** Config FF values for both motors */
-  default void setFF(double kS, double kV, double kA) {
-  }
+  default void setFF(double kS, double kV, double kA) {}
 
   /** Run left flywheels at voltage */
-  default void runCharacterizationLeft(double input) {
-  }
+  default void runCharacterizationLeft(double input) {}
 
   /** Run right flywheels at voltage */
-  default void runCharacterizationRight(double input) {
-  }
+  default void runCharacterizationRight(double input) {}
 
   default List<ParentDevice> getOrchestraDevices() {
     return Collections.emptyList();
   }
 
-  default void registerSelfCheckHardware(AdvancedSubsystem subsystem) {
-  }
+  default void registerSelfCheckHardware(AdvancedSubsystem subsystem) {}
 }

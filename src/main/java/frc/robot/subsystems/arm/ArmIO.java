@@ -7,14 +7,11 @@
 
 package frc.robot.subsystems.arm;
 
+import com.ctre.phoenix6.hardware.ParentDevice;
+import frc.robot.util.subsystem.AdvancedSubsystem;
 import java.util.Collections;
 import java.util.List;
-
 import org.littletonrobotics.junction.AutoLog;
-
-import com.ctre.phoenix6.hardware.ParentDevice;
-
-import frc.robot.util.subsystem.AdvancedSubsystem;
 
 public interface ArmIO {
   @AutoLog
@@ -33,37 +30,29 @@ public interface ArmIO {
     public boolean absoluteEncoderConnected = true;
   }
 
-  default void updateInputs(ArmIOInputs inputs) {
-  }
+  default void updateInputs(ArmIOInputs inputs) {}
 
   /** Run to setpoint angle in radians */
-  default void runSetpoint(double setpointDegrees, double feedforward) {
-  }
+  default void runSetpoint(double setpointDegrees, double feedforward) {}
 
   /** Run motors at volts */
-  default void runVolts(double volts) {
-  }
+  default void runVolts(double volts) {}
 
   /** Run motors at current */
-  default void runCurrent(double amps) {
-  }
+  default void runCurrent(double amps) {}
 
   /** Set brake mode enabled */
-  default void setBrakeMode(boolean enabled) {
-  }
+  default void setBrakeMode(boolean enabled) {}
 
   /** Set PID values */
-  default void setPID(double p, double i, double d) {
-  }
+  default void setPID(double p, double i, double d) {}
 
   /** Stops motors */
-  default void stop() {
-  }
+  default void stop() {}
 
   default List<ParentDevice> getOrchestraDevices() {
     return Collections.emptyList();
   }
 
-  default void registerSelfCheckHardware(AdvancedSubsystem subsystem) {
-  }
+  default void registerSelfCheckHardware(AdvancedSubsystem subsystem) {}
 }

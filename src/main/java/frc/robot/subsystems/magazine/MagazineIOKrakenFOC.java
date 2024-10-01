@@ -21,89 +21,89 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-
 import edu.wpi.first.math.util.Units;
 
 public class MagazineIOKrakenFOC implements MagazineIO {
 
-    private final TalonFX magazineTalon;
+  private final TalonFX magazineTalon;
 
-    private final StatusSignal<Double> magazinePosition;
-    private final StatusSignal<Double> magazineVelocity;
-    private final StatusSignal<Double> magazineAppliedVolts;
-    private final StatusSignal<Double> magazineSupplyCurrent;
-    private final StatusSignal<Double> magazineTorqueCurrent;
-    private final StatusSignal<Double> magazineTempCelsius;
+  private final StatusSignal<Double> magazinePosition;
+  private final StatusSignal<Double> magazineVelocity;
+  private final StatusSignal<Double> magazineAppliedVolts;
+  private final StatusSignal<Double> magazineSupplyCurrent;
+  private final StatusSignal<Double> magazineTorqueCurrent;
+  private final StatusSignal<Double> magazineTempCelsius;
 
-    // Control
-    private final VoltageOut voltageControl = new VoltageOut(0).withUpdateFreqHz(0.0);
-    private final NeutralOut neutralControl = new NeutralOut().withUpdateFreqHz(0.0);
+  // Control
+  private final VoltageOut voltageControl = new VoltageOut(0).withUpdateFreqHz(0.0);
+  private final NeutralOut neutralControl = new NeutralOut().withUpdateFreqHz(0.0);
 
-    public MagazineIOKrakenFOC() {
-        magazineTalon = new TalonFX(15, "rio");
+  public MagazineIOKrakenFOC() {
+    magazineTalon = new TalonFX(15, "rio");
 
-        // General config
-        TalonFXConfiguration config = new TalonFXConfiguration();
-        config.CurrentLimits.SupplyCurrentLimit = 60.0;
-        config.CurrentLimits.SupplyCurrentLimitEnable = true;
-        config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
-        config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+    // General config
+    TalonFXConfiguration config = new TalonFXConfiguration();
+    config.CurrentLimits.SupplyCurrentLimit = 60.0;
+    config.CurrentLimits.SupplyCurrentLimitEnable = true;
+    config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+    config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
-        // Apply configs
-        magazineTalon.getConfigurator().apply(config, 1.0);
+    // Apply configs
+    magazineTalon.getConfigurator().apply(config, 1.0);
 
-        // Set inverts
-        magazineTalon.setInverted(true);
+    // Set inverts
+    magazineTalon.setInverted(true);
 
-        // Set signals
-        magazinePosition = magazineTalon.getPosition();
-        magazineVelocity = magazineTalon.getVelocity();
-        magazineAppliedVolts = magazineTalon.getMotorVoltage();
-        magazineSupplyCurrent = magazineTalon.getSupplyCurrent();
-        magazineTorqueCurrent = magazineTalon.getTorqueCurrent();
-        magazineTempCelsius = magazineTalon.getDeviceTemp();
+    // Set signals
+    magazinePosition = magazineTalon.getPosition();
+    magazineVelocity = magazineTalon.getVelocity();
+    magazineAppliedVolts = magazineTalon.getMotorVoltage();
+    magazineSupplyCurrent = magazineTalon.getSupplyCurrent();
+    magazineTorqueCurrent = magazineTalon.getTorqueCurrent();
+    magazineTempCelsius = magazineTalon.getDeviceTemp();
 
-        BaseStatusSignal.setUpdateFrequencyForAll(
-                100.0,
-                magazinePosition,
-                magazineVelocity,
-                magazineAppliedVolts,
-                magazineSupplyCurrent,
-                magazineTorqueCurrent,
-                magazineTempCelsius);
-    }
+    BaseStatusSignal.setUpdateFrequencyForAll(
+        100.0,
+        magazinePosition,
+        magazineVelocity,
+        magazineAppliedVolts,
+        magazineSupplyCurrent,
+        magazineTorqueCurrent,
+        magazineTempCelsius);
+  }
 
-    @Override
-    public void updateInputs(MagazineIOInputs inputs) {
-        inputs.magazineMotorConnected = BaseStatusSignal.refreshAll(
+  @Override
+  public void updateInputs(MagazineIOInputs inputs) {
+    inputs.magazineMotorConnected =
+        BaseStatusSignal.refreshAll(
                 magazinePosition,
                 magazineVelocity,
                 magazineAppliedVolts,
                 magazineSupplyCurrent,
                 magazineTorqueCurrent,
                 magazineTempCelsius)
-                .isOK();
+            .isOK();
 
-        inputs.magazinePositionRads = Units.rotationsToRadians(magazinePosition.getValueAsDouble());
-        inputs.magazineVelocityRpm = magazineVelocity.getValueAsDouble() * 60.0;
-        inputs.magazineAppliedVolts = magazineAppliedVolts.getValueAsDouble();
-        inputs.magazineSupplyCurrentAmps = magazineSupplyCurrent.getValueAsDouble();
-        inputs.magazineTorqueCurrentAmps = magazineTorqueCurrent.getValueAsDouble();
-        inputs.magazineTempCelsius = magazineTempCelsius.getValueAsDouble();
-    }
+    inputs.magazinePositionRads = Units.rotationsToRadians(magazinePosition.getValueAsDouble());
+    inputs.magazineVelocityRpm = magazineVelocity.getValueAsDouble() * 60.0;
+    inputs.magazineAppliedVolts = magazineAppliedVolts.getValueAsDouble();
+    inputs.magazineSupplyCurrentAmps = magazineSupplyCurrent.getValueAsDouble();
+    inputs.magazineTorqueCurrentAmps = magazineTorqueCurrent.getValueAsDouble();
+    inputs.magazineTempCelsius = magazineTempCelsius.getValueAsDouble();
+  }
 
-    @Override
-    public void runVolts(double magazineVolts) {
-        magazineTalon.setControl(voltageControl.withOutput(magazineVolts));
-    }
+  @Override
+  public void runVolts(double magazineVolts) {
+    magazineTalon.setControl(voltageControl.withOutput(magazineVolts));
+  }
 
-    @Override
-    public void stop() {
-        magazineTalon.setControl(neutralControl);
-    }
+  @Override
+  public void stop() {
+    magazineTalon.setControl(neutralControl);
+  }
 
-    @Override
-    public void runCharacterizationMagazine(double input) {
-        magazineTalon.setControl(voltageControl.withOutput(input));
-    }
+  @Override
+  public void runCharacterizationMagazine(double input) {
+    magazineTalon.setControl(voltageControl.withOutput(input));
+  }
 }

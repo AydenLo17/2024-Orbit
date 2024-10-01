@@ -15,6 +15,7 @@ package frc.robot.subsystems.drive;
 
 import static frc.robot.subsystems.drive.DriveConstants.*;
 
+import com.ctre.phoenix6.hardware.ParentDevice;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
 import com.pathplanner.lib.util.PIDConstants;
@@ -37,10 +38,13 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.VisionHelpers.TimestampedVisionUpdate;
+import frc.robot.util.subsystem.AdvancedSubsystem;
+import frc.robot.util.subsystem.SubsystemFault;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
@@ -49,7 +53,7 @@ import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-public class Drive extends SubsystemBase {
+public class Drive extends AdvancedSubsystem {
   static final Lock odometryLock = new ReentrantLock();
   private final GyroIO gyroIO;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
@@ -61,22 +65,23 @@ public class Drive extends SubsystemBase {
   private Rotation2d rawGyroRotation = new Rotation2d();
   private SwerveModulePosition[] lastModulePositions = // For delta tracking
       new SwerveModulePosition[] {
-          new SwerveModulePosition(),
-          new SwerveModulePosition(),
-          new SwerveModulePosition(),
-          new SwerveModulePosition()
+        new SwerveModulePosition(),
+        new SwerveModulePosition(),
+        new SwerveModulePosition(),
+        new SwerveModulePosition()
       };
-  private SwerveDrivePoseEstimator poseEstimator = new SwerveDrivePoseEstimator(
-      kinematics,
-      rawGyroRotation,
-      lastModulePositions,
-      new Pose2d(),
-      stateStdDevs,
-      new Matrix<>(
-          VecBuilder.fill(xyStdDevCoefficient, xyStdDevCoefficient, thetaStdDevCoefficient)));
+  private SwerveDrivePoseEstimator poseEstimator =
+      new SwerveDrivePoseEstimator(
+          kinematics,
+          rawGyroRotation,
+          lastModulePositions,
+          new Pose2d(),
+          stateStdDevs,
+          new Matrix<>(
+              VecBuilder.fill(xyStdDevCoefficient, xyStdDevCoefficient, thetaStdDevCoefficient)));
 
-  private SwerveDrivePoseEstimator odometryDrive = new SwerveDrivePoseEstimator(kinematics, rawGyroRotation,
-      lastModulePositions, new Pose2d());
+  private SwerveDrivePoseEstimator odometryDrive =
+      new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePositions, new Pose2d());
 
   public Drive(
       GyroIO gyroIO,
@@ -108,12 +113,14 @@ public class Drive extends SubsystemBase {
             drivetrainConfig.maxLinearVelocity(),
             drivetrainConfig.driveBaseRadius(),
             new ReplanningConfig()),
-        () -> DriverStation.getAlliance().isPresent()
-            && DriverStation.getAlliance().get() == Alliance.Red,
+        () ->
+            DriverStation.getAlliance().isPresent()
+                && DriverStation.getAlliance().get() == Alliance.Red,
         this);
     PathPlannerLogging.setLogActivePathCallback(
-        activePath -> Logger.recordOutput(
-            "Odometry/Trajectory", activePath.toArray(new Pose2d[activePath.size()])));
+        activePath ->
+            Logger.recordOutput(
+                "Odometry/Trajectory", activePath.toArray(new Pose2d[activePath.size()])));
     PathPlannerLogging.setLogTargetPoseCallback(
         targetPose -> Logger.recordOutput("Odometry/TrajectorySetpoint", targetPose));
   }
@@ -144,7 +151,8 @@ public class Drive extends SubsystemBase {
     }
 
     // Update odometry
-    double[] sampleTimestamps = modules[0].getOdometryTimestamps(); // All signals are sampled together
+    double[] sampleTimestamps =
+        modules[0].getOdometryTimestamps(); // All signals are sampled together
     int sampleCount = sampleTimestamps.length;
     for (int i = 0; i < sampleCount; i++) {
       // Read wheel positions and deltas from each module
@@ -152,10 +160,11 @@ public class Drive extends SubsystemBase {
       SwerveModulePosition[] moduleDeltas = new SwerveModulePosition[4];
       for (int moduleIndex = 0; moduleIndex < 4; moduleIndex++) {
         modulePositions[moduleIndex] = modules[moduleIndex].getOdometryPositions()[i];
-        moduleDeltas[moduleIndex] = new SwerveModulePosition(
-            modulePositions[moduleIndex].distanceMeters
-                - lastModulePositions[moduleIndex].distanceMeters,
-            modulePositions[moduleIndex].angle);
+        moduleDeltas[moduleIndex] =
+            new SwerveModulePosition(
+                modulePositions[moduleIndex].distanceMeters
+                    - lastModulePositions[moduleIndex].distanceMeters,
+                modulePositions[moduleIndex].angle);
         lastModulePositions[moduleIndex] = modulePositions[moduleIndex];
       }
 
@@ -180,9 +189,11 @@ public class Drive extends SubsystemBase {
     return Commands.run(
         () -> {
           // Apply deadband
-          double linearMagnitude = MathUtil.applyDeadband(
-              Math.hypot(xSupplier.getAsDouble(), ySupplier.getAsDouble()), DEADBAND);
-          Rotation2d linearDirection = new Rotation2d(xSupplier.getAsDouble(), ySupplier.getAsDouble());
+          double linearMagnitude =
+              MathUtil.applyDeadband(
+                  Math.hypot(xSupplier.getAsDouble(), ySupplier.getAsDouble()), DEADBAND);
+          Rotation2d linearDirection =
+              new Rotation2d(xSupplier.getAsDouble(), ySupplier.getAsDouble());
           double omega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
 
           // Square values
@@ -190,24 +201,27 @@ public class Drive extends SubsystemBase {
           omega = Math.copySign(omega * omega, omega);
 
           // Calcaulate new linear velocity
-          Translation2d linearVelocity = new Pose2d(new Translation2d(), linearDirection)
-              .transformBy(new Transform2d(linearMagnitude, 0.0, new Rotation2d()))
-              .getTranslation();
+          Translation2d linearVelocity =
+              new Pose2d(new Translation2d(), linearDirection)
+                  .transformBy(new Transform2d(linearMagnitude, 0.0, new Rotation2d()))
+                  .getTranslation();
 
           // Get robot relative vel
-          boolean isFlipped = DriverStation.getAlliance().isPresent()
-              && DriverStation.getAlliance().get() == Alliance.Red;
+          boolean isFlipped =
+              DriverStation.getAlliance().isPresent()
+                  && DriverStation.getAlliance().get() == Alliance.Red;
 
           double robotRelativeXVel = linearVelocity.getX() * drivetrainConfig.maxLinearVelocity();
           double robotRelativeYVel = linearVelocity.getY() * drivetrainConfig.maxLinearVelocity();
 
-          ChassisSpeeds chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
-              robotRelativeXVel,
-              robotRelativeYVel,
-              omega * drivetrainConfig.maxAngularVelocity(),
-              isFlipped
-                  ? this.getRotation().plus(new Rotation2d(Math.PI))
-                  : this.getRotation());
+          ChassisSpeeds chassisSpeeds =
+              ChassisSpeeds.fromFieldRelativeSpeeds(
+                  robotRelativeXVel,
+                  robotRelativeYVel,
+                  omega * drivetrainConfig.maxAngularVelocity(),
+                  isFlipped
+                      ? this.getRotation().plus(new Rotation2d(Math.PI))
+                      : this.getRotation());
           // Convert to field relative speeds & send command
           this.runVelocity(chassisSpeeds);
         },
@@ -248,10 +262,8 @@ public class Drive extends SubsystemBase {
   }
 
   /**
-   * Stops the drive and turns the modules to an X arrangement to resist movement.
-   * The modules will
-   * return to their normal orientations the next time a nonzero velocity is
-   * requested.
+   * Stops the drive and turns the modules to an X arrangement to resist movement. The modules will
+   * return to their normal orientations the next time a nonzero velocity is requested.
    */
   public void stopWithX() {
     Rotation2d[] headings = new Rotation2d[4];
@@ -262,10 +274,7 @@ public class Drive extends SubsystemBase {
     stop();
   }
 
-  /**
-   * Returns the module states (turn angles and drive velocities) for all of the
-   * modules.
-   */
+  /** Returns the module states (turn angles and drive velocities) for all of the modules. */
   @AutoLogOutput(key = "SwerveStates/Measured")
   private SwerveModuleState[] getModuleStates() {
     SwerveModuleState[] states = new SwerveModuleState[4];
@@ -275,10 +284,7 @@ public class Drive extends SubsystemBase {
     return states;
   }
 
-  /**
-   * Returns the module positions (turn angles and drive positions) for all of the
-   * modules.
-   */
+  /** Returns the module positions (turn angles and drive positions) for all of the modules. */
   private SwerveModulePosition[] getModulePositions() {
     SwerveModulePosition[] states = new SwerveModulePosition[4];
     for (int i = 0; i < 4; i++) {
@@ -327,7 +333,7 @@ public class Drive extends SubsystemBase {
    * Adds a vision measurement to the pose estimator.
    *
    * @param visionPose The pose of the robot as measured by the vision camera.
-   * @param timestamp  The timestamp of the vision measurement in seconds.
+   * @param timestamp The timestamp of the vision measurement in seconds.
    */
   public void addVisionMeasurement(
       Pose2d visionPose, double timestamp, Matrix<N3, N1> visionMeasurementStdDevs) {
@@ -341,8 +347,9 @@ public class Drive extends SubsystemBase {
    */
   public void addVisionData(List<TimestampedVisionUpdate> visionData) {
     visionData.forEach(
-        visionUpdate -> addVisionMeasurement(
-            visionUpdate.pose(), visionUpdate.timestamp(), visionUpdate.stdDevs()));
+        visionUpdate ->
+            addVisionMeasurement(
+                visionUpdate.pose(), visionUpdate.timestamp(), visionUpdate.stdDevs()));
   }
 
   /** Runs forwards at the commanded voltage. */
@@ -366,12 +373,84 @@ public class Drive extends SubsystemBase {
   }
 
   public void setWheelsToCircle() {
-    Rotation2d[] turnAngles = Arrays.stream(DriveConstants.moduleTranslations)
-        .map(translation -> translation.getAngle().plus(new Rotation2d(Math.PI / 2.0)))
-        .toArray(Rotation2d[]::new);
-    SwerveModuleState[] desiredStates = Arrays.stream(turnAngles)
-        .map(angle -> new SwerveModuleState(0, angle))
-        .toArray(SwerveModuleState[]::new);
+    Rotation2d[] turnAngles =
+        Arrays.stream(DriveConstants.moduleTranslations)
+            .map(translation -> translation.getAngle().plus(new Rotation2d(Math.PI / 2.0)))
+            .toArray(Rotation2d[]::new);
+    SwerveModuleState[] desiredStates =
+        Arrays.stream(turnAngles)
+            .map(angle -> new SwerveModuleState(0, angle))
+            .toArray(SwerveModuleState[]::new);
     setModuleStates(desiredStates);
+  }
+
+  @Override
+  protected Command systemCheckCommand() {
+    return Commands.sequence(
+        runOnce(
+            () -> {
+              modules[0].getSystemCheckCommand().schedule();
+              modules[1].getSystemCheckCommand().schedule();
+              modules[2].getSystemCheckCommand().schedule();
+              modules[3].getSystemCheckCommand().schedule();
+            }),
+        // Hack to run module system checks since modules[] does not exist when this
+        // method is
+        // called
+        Commands.waitUntil(
+                () ->
+                    modules[0].getCurrentCommand() == null
+                        && modules[1].getCurrentCommand() == null
+                        && modules[2].getCurrentCommand() == null
+                        && modules[3].getCurrentCommand() == null) // ,
+            // run(() -> driveFieldRelative(new ChassisSpeeds(0, 0, 0.5))).withTimeout(2.0),
+            // run(() -> driveFieldRelative(new ChassisSpeeds(0, 0, -0.5))).withTimeout(2.0))
+            .until(
+                () ->
+                    !getFaults().isEmpty()
+                        || !modules[0].getFaults().isEmpty()
+                        || !modules[1].getFaults().isEmpty()
+                        || !modules[2].getFaults().isEmpty()
+                        || !modules[3].getFaults().isEmpty())
+            .andThen(runOnce(this::stop)));
+  }
+
+  @Override
+  public List<ParentDevice> getOrchestraDevices() {
+    List<ParentDevice> orchestra = new ArrayList<>(modules.length * 2);
+
+    for (var module : modules) {
+      orchestra.addAll(module.getOrchestraDevices());
+    }
+
+    return orchestra;
+  }
+
+  @Override
+  public SystemStatus getSystemStatus() {
+    SystemStatus worstStatus = SystemStatus.OK;
+
+    for (SubsystemFault f : this.getFaults()) {
+      if (f.sticky || f.timestamp > Timer.getFPGATimestamp() - 10) {
+        if (f.isWarning) {
+          if (worstStatus != SystemStatus.ERROR) {
+            worstStatus = SystemStatus.WARNING;
+          }
+        } else {
+          worstStatus = SystemStatus.ERROR;
+        }
+      }
+    }
+
+    for (Module module : modules) {
+      SystemStatus moduleStatus = module.getSystemStatus();
+      if (moduleStatus == SystemStatus.ERROR) {
+        worstStatus = SystemStatus.ERROR;
+      } else if (moduleStatus == SystemStatus.WARNING && worstStatus == SystemStatus.OK) {
+        worstStatus = SystemStatus.WARNING;
+      }
+    }
+
+    return worstStatus;
   }
 }
