@@ -129,14 +129,14 @@ public class ArmIOKrakenFOC implements ArmIO {
                 encoderAbsolutePositionRotations, encoderRelativePositionRotations)
             .isOK();
 
-    inputs.positionDegrees = Units.rotationsToRadians(internalPositionRotations.getValueAsDouble());
+    inputs.positionDegrees = Units.rotationsToDegrees(internalPositionRotations.getValueAsDouble());
     inputs.absoluteEncoderPositionDegrees =
-        Units.rotationsToRadians(encoderAbsolutePositionRotations.getValueAsDouble())
+        Units.rotationsToDegrees(encoderAbsolutePositionRotations.getValueAsDouble())
             - ArmConstants.armEncoderOffsetDegrees; // Negate internal offset
     inputs.relativeEncoderPositionDegrees =
-        Units.rotationsToRadians(encoderRelativePositionRotations.getValueAsDouble())
+        Units.rotationsToDegrees(encoderRelativePositionRotations.getValueAsDouble())
             - ArmConstants.armEncoderOffsetDegrees;
-    inputs.velocityDegreesPerSec = Units.rotationsToRadians(velocityRps.getValue());
+    inputs.velocityDegreesPerSec = Units.rotationsToDegrees(velocityRps.getValue());
     inputs.appliedVolts =
         appliedVoltage.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();
     inputs.supplyCurrentAmps =
