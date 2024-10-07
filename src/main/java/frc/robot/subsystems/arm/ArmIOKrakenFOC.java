@@ -13,9 +13,12 @@ import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.*;
 import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.*;
 import edu.wpi.first.math.util.Units;
+import frc.robot.util.subsystem.AdvancedSubsystem;
+
 import java.util.List;
 
 public class ArmIOKrakenFOC implements ArmIO {
@@ -181,5 +184,17 @@ public class ArmIOKrakenFOC implements ArmIO {
   @Override
   public void stop() {
     leaderTalon.setControl(new NeutralOut());
+  }
+
+  @Override
+  public List<ParentDevice> getOrchestraDevices() {
+      return List.of(leaderTalon, followerTalon);
+  }
+
+  @Override
+  public void registerSelfCheckHardware(AdvancedSubsystem subsystem) {
+      subsystem.registerHardware("Left Arm Motor", leaderTalon);
+      subsystem.registerHardware("Right Arm Motor", followerTalon);
+      subsystem.registerHardware("Absolute Arm Encoder", absoluteEncoder);
   }
 }

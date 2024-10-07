@@ -9,15 +9,19 @@ package frc.robot.subsystems.flywheels;
 
 import static frc.robot.subsystems.flywheels.FlywheelConstants.*;
 
+import java.util.List;
+
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.*;
+import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.util.Units;
+import frc.robot.util.subsystem.AdvancedSubsystem;
 
 public class FlywheelsIOKrakenFOC implements FlywheelsIO {
   // Hardware
@@ -107,24 +111,22 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
 
   @Override
   public void updateInputs(FlywheelsIOInputs inputs) {
-    inputs.leftMotorConnected =
-        BaseStatusSignal.refreshAll(
-                leftPosition,
-                leftVelocity,
-                leftAppliedVolts,
-                leftSupplyCurrent,
-                leftTorqueCurrent,
-                leftTempCelsius)
-            .isOK();
-    inputs.rightMotorConnected =
-        BaseStatusSignal.refreshAll(
-                rightPosition,
-                rightVelocity,
-                rightAppliedVolts,
-                rightSupplyCurrent,
-                rightTorqueCurrent,
-                rightTempCelsius)
-            .isOK();
+    inputs.leftMotorConnected = BaseStatusSignal.refreshAll(
+        leftPosition,
+        leftVelocity,
+        leftAppliedVolts,
+        leftSupplyCurrent,
+        leftTorqueCurrent,
+        leftTempCelsius)
+        .isOK();
+    inputs.rightMotorConnected = BaseStatusSignal.refreshAll(
+        rightPosition,
+        rightVelocity,
+        rightAppliedVolts,
+        rightSupplyCurrent,
+        rightTorqueCurrent,
+        rightTempCelsius)
+        .isOK();
 
     inputs.leftPositionRads = Units.rotationsToRadians(leftPosition.getValueAsDouble());
     inputs.leftVelocityRpm = leftVelocity.getValueAsDouble() * 60.0;
@@ -179,5 +181,16 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
   @Override
   public void runCharacterizationRight(double input) {
     rightTalon.setControl(voltageControl.withOutput(input));
+  }
+
+  @Override
+  public List<ParentDevice> getOrchestraDevices() {
+    return List.of(leftTalon, rightTalon);
+  }
+
+  @Override
+  public void registerSelfCheckHardware(AdvancedSubsystem subsystem) {
+    subsystem.registerHardware("Left Shooter Motor", leftTalon);
+    subsystem.registerHardware("Right Shooter Motor", rightTalon);
   }
 }

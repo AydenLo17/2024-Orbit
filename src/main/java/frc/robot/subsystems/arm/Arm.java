@@ -12,11 +12,14 @@ import static frc.robot.subsystems.arm.ArmConstants.*;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj.util.Color8Bit;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
@@ -116,8 +119,8 @@ public class Arm extends AdvancedSubsystem {
   private double goalAngle;
   private ArmFeedforward ff;
 
-  private final ArmVisualizer measuredVisualizer;
-  private final ArmVisualizer setpointVisualizer;
+  private final ArmVisualizer visualizerMeasured;
+  private final ArmVisualizer visualizerSetpoint;
   private final ArmVisualizer goalVisualizer;
 
   private final Alert leaderMotorDisconnected =
@@ -146,9 +149,9 @@ public class Arm extends AdvancedSubsystem {
 
     // Set up visualizers
     NoteVisualizer.setArmAngleSupplier(() -> Rotation2d.fromRadians(inputs.positionDegrees));
-    measuredVisualizer = new ArmVisualizer("Measured", Color.kBlack);
-    setpointVisualizer = new ArmVisualizer("Setpoint", Color.kGreen);
-    goalVisualizer = new ArmVisualizer("Goal", Color.kBlue);
+    visualizerMeasured = new ArmVisualizer("ArmMeasured", null);
+    visualizerSetpoint = new ArmVisualizer("ArmSetpoint", new Color8Bit(Color.kOrange));
+    goalVisualizer = new ArmVisualizer("Goal", new Color8Bit(Color.kBlue));
   }
 
   public void setOverrides(
@@ -243,18 +246,18 @@ public class Arm extends AdvancedSubsystem {
     }
 
     // Logs
-    measuredVisualizer.update(inputs.positionDegrees);
-    setpointVisualizer.update(setpointState.position);
+    visualizerMeasured.update(inputs.positionDegrees);
+    visualizerSetpoint.update(setpointState.position);
     Logger.recordOutput("Arm/SetpointAngle", setpointState.position);
     Logger.recordOutput("Arm/SetpointVelocity", setpointState.velocity);
-    Logger.recordOutput("Superstructure/Arm/Goal", goal);
+    Logger.recordOutput("Arm/Goal", goal);
   }
 
   public void stop() {
     io.stop();
   }
 
-  @AutoLogOutput(key = "Superstructure/Arm/AtGoal")
+  @AutoLogOutput(key = "Arm/AtGoal")
   public boolean atGoal() {
     return EqualsUtil.epsilonEquals(setpointState.position, goalAngle, 1e-3);
   }
@@ -293,6 +296,11 @@ public class Arm extends AdvancedSubsystem {
 
   public double getArmAngle() {
     return inputs.positionDegrees;
+  }
+
+  public Transform3d getFlywheelPosition() {
+    return new Transform3d(
+        new Pose3d() {}, visualizerMeasured.getArmPose(inputs.absoluteEncoderPositionDegrees));
   }
 
   @Override

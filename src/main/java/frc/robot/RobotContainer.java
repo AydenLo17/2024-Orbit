@@ -16,11 +16,13 @@ package frc.robot;
 import static frc.robot.subsystems.drive.DriveConstants.*;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -45,6 +47,10 @@ import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakeIO;
 import frc.robot.subsystems.intake.IntakeIOKrakenFOC;
 import frc.robot.subsystems.intake.IntakeIOSim;
+import frc.robot.subsystems.linebreak.LineBreak;
+import frc.robot.subsystems.linebreak.LineBreakIO;
+import frc.robot.subsystems.linebreak.LineBreakIODigitalInput;
+import frc.robot.subsystems.linebreak.LineBreakIOSim;
 import frc.robot.subsystems.magazine.Magazine;
 import frc.robot.subsystems.magazine.MagazineIO;
 import frc.robot.subsystems.magazine.MagazineIOKrakenFOC;
@@ -53,6 +59,9 @@ import frc.robot.subsystems.vision.AprilTagVision;
 import frc.robot.subsystems.vision.AprilTagVisionIO;
 import frc.robot.subsystems.vision.AprilTagVisionIOLimelight;
 import frc.robot.subsystems.vision.AprilTagVisionIOPhotonVisionSIM;
+import frc.robot.util.subsystem.AdvancedSubsystem;
+import frc.robot.util.visualizer.NoteVisualizer;
+import frc.robot.util.visualizer.RobotGamePieceVisualizer;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -63,12 +72,13 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  */
 public class RobotContainer {
   // Subsystems
-  private final Drive drive;
-  private final AprilTagVision aprilTagVision;
-  private final Flywheels flywheels;
-  private final Intake intake;
-  private final Magazine magazine;
-  private final Arm arm;
+  private static Drive drive;
+  private static AprilTagVision aprilTagVision;
+  private static Flywheels flywheels;
+  private static Intake intake;
+  private static Magazine magazine;
+  private static LineBreak lineBreak;
+  private static Arm arm;
   private final CompositeCommand compositeCommand;
 
   // Controller
@@ -93,6 +103,7 @@ public class RobotContainer {
         flywheels = new Flywheels(new FlywheelsIOKrakenFOC());
         magazine = new Magazine(new MagazineIOKrakenFOC());
         intake = new Intake(new IntakeIOKrakenFOC());
+        lineBreak = new LineBreak(new LineBreakIODigitalInput());
         arm = new Arm(new ArmIOKrakenFOC());
 
         break;
@@ -115,6 +126,7 @@ public class RobotContainer {
         flywheels = new Flywheels(new FlywheelsIOSim());
         magazine = new Magazine(new MagazineIOSim());
         intake = new Intake(new IntakeIOSim());
+        lineBreak = new LineBreak(new LineBreakIOSim());
         arm = new Arm(new ArmIOSim());
 
         break;
@@ -132,16 +144,41 @@ public class RobotContainer {
         flywheels = new Flywheels(new FlywheelsIO() {});
         magazine = new Magazine(new MagazineIO() {});
         intake = new Intake(new IntakeIO() {});
+        lineBreak = new LineBreak(new LineBreakIO() {});
         arm = new Arm(new ArmIO() {});
 
         break;
     }
+
+    NoteVisualizer.setRobotPoseSupplier(
+        () ->
+            new Pose3d(
+                new Translation3d(
+                    drive.getPose().getTranslation().getX(),
+                    drive.getPose().getTranslation().getY(),
+                    0),
+                new Rotation3d(0, 0, drive.getPose().getRotation().getRadians())));
+
+    RobotGamePieceVisualizer.setRobotPoseSupplier(
+        () ->
+            new Pose3d(
+                new Translation3d(
+                    drive.getPose().getTranslation().getX(),
+                    drive.getPose().getTranslation().getY(),
+                    0),
+                new Rotation3d(0, 0, drive.getPose().getRotation().getRadians())));
+
+    RobotGamePieceVisualizer.setArmTransformSupplier(arm::getFlywheelPosition);
+    RobotGamePieceVisualizer.setShooterAngleSupplier(arm::getArmAngle);
+    RobotGamePieceVisualizer.setIsMagazineLoadedSupplier(lineBreak::hasGamePieceIntake);
+    RobotGamePieceVisualizer.setIsShooterLoadedSupplier(lineBreak::isShooterLoaded);
 
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
 
     // Configure the button bindings
     aprilTagVision.setDataInterfaces(drive::addVisionData);
     compositeCommand = new CompositeCommand(drive, flywheels);
+    addNTCommands();
     configureAutos();
     configureButtonBindings();
   }
@@ -178,6 +215,10 @@ public class RobotContainer {
     // Smart Shooting"));
   }
 
+  private static void addNTCommands() {
+    SmartDashboard.putData("SystemStatus/AllSystemsCheck", allSystemsCheck());
+  }
+
   /**
    * Use this to pass the autonomous command to the main {@link Robot} class.
    *
@@ -185,5 +226,22 @@ public class RobotContainer {
    */
   public Command getAutonomousCommand() {
     return autoChooser.get();
+  }
+
+  public static Command allSystemsCheck() {
+    return Commands.sequence(
+        drive.getSystemCheckCommand(),
+        flywheels.getSystemCheckCommand(),
+        intake.getSystemCheckCommand(),
+        magazine.getSystemCheckCommand(),
+        arm.getSystemCheckCommand());
+  }
+
+  public static boolean allSystemsOK() {
+    return drive.getSystemStatus() == AdvancedSubsystem.SystemStatus.OK
+        && flywheels.getSystemStatus() == AdvancedSubsystem.SystemStatus.OK
+        && intake.getSystemStatus() == AdvancedSubsystem.SystemStatus.OK
+        && magazine.getSystemStatus() == AdvancedSubsystem.SystemStatus.OK
+        && arm.getSystemStatus() == AdvancedSubsystem.SystemStatus.OK;
   }
 }

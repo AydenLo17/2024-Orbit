@@ -13,15 +13,19 @@
 
 package frc.robot.subsystems.intake;
 
+import java.util.List;
+
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.VoltageOut;
+import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.util.Units;
+import frc.robot.util.subsystem.AdvancedSubsystem;
 
 public class IntakeIOKrakenFOC implements IntakeIO {
 
@@ -105,5 +109,15 @@ public class IntakeIOKrakenFOC implements IntakeIO {
   @Override
   public void runCharacterizationIntake(double input) {
     intakeTalon.setControl(voltageControl.withOutput(input));
+  }
+
+   @Override
+  public List<ParentDevice> getOrchestraDevices() {
+    return List.of(intakeTalon);
+  }
+
+  @Override
+  public void registerSelfCheckHardware(AdvancedSubsystem subsystem) {
+    subsystem.registerHardware("Intake Motor", intakeTalon);
   }
 }

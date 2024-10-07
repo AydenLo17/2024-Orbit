@@ -224,7 +224,7 @@ public class Module extends AdvancedSubsystem {
                   io.setDriveVoltage(0);
                   io.setTurnVoltage(3.6);
                 }),
-            Commands.waitSeconds(0.3),
+            Commands.waitSeconds(1),
             runOnce(
                 () -> {
                   if (inputs.turnVelocityRadPerSec < 1) {
@@ -235,10 +235,10 @@ public class Module extends AdvancedSubsystem {
             Commands.waitSeconds(0.5),
             runOnce(
                 () -> {
-                  io.setDriveVoltage(1.2);
+                  io.setDriveVoltage(3.6);
                   io.setTurnVoltage(0);
                 }),
-            Commands.waitSeconds(0.5),
+            Commands.waitSeconds(1),
             runOnce(
                 () -> {
                   if (getState().speedMetersPerSecond < 0.25) {
